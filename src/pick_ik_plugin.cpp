@@ -143,6 +143,10 @@ class PickIKPlugin : public kinematics::KinematicsBase {
             goals.push_back(Goal{make_minimal_displacement_cost_fn(robot_, ik_seed_state),
                                  params.minimal_displacement_weight});
         }
+       
+        goals.push_back(Goal{make_configure_elbow_cost_fn(robot_),
+                                 params.configure_elbow_weight});
+        
         if (cost_function) {
             for (auto const& pose : ik_poses) {
                 goals.push_back(

@@ -129,6 +129,14 @@ pick_ik:
       gt_eq<>: [0.0],
     },
   }
+  configure_elbow_weight: {
+    type: double,
+    default_value: 0.0,
+    description: "Weight for cost function to keep the elbow in the desired pose, >0.0 enables const function",
+    validation: {
+      gt_eq<>: [0.0],
+    },
+  }
   stop_optimization_on_valid_solution : {
     type: bool,
     default_value: true,
