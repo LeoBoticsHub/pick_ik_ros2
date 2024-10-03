@@ -148,12 +148,6 @@ auto make_configure_elbow_cost_fn(Robot robot) -> CostFn {
         double sum = 0;
         assert(active_positions.size() == robot.variables.size());
 
-        // long unsigned int i = 3; // elbow joint index
-        // double elbow_desired = 1.22173; //rad
-        // double configure_elbow_weight = 0.03; // user defined weight
-        // auto const elbow_position = active_positions[i];
-        // sum = std::pow((elbow_position - elbow_desired)*configure_elbow_weight, 2);
-
         // joint 3 has limits [-180, 180]
         // To get lower elbow configuration joint 3 should be > 0. To avoid configuration where the arm is straight
         // we set an average configuration for joint 3 at 90 deg and define a custom goal (similar to avoid joint limits)
@@ -162,7 +156,7 @@ auto make_configure_elbow_cost_fn(Robot robot) -> CostFn {
         double h = 3.14; // upper limit for joint 3
         double l = 0; // lower limit for joint 3 to keep the arm in lower joint config
 
-        double configure_elbow_weight = 0.004; // user defined weight
+        double configure_elbow_weight = 0.001; // user defined weight
 
         long unsigned int i = 3; // elbow joint index
         auto const elbow_position = active_positions[i];
