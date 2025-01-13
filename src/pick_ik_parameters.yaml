@@ -129,10 +129,52 @@ pick_ik:
       gt_eq<>: [0.0],
     },
   }
-  configure_elbow_weight: {
+  hard_joint_limits_weight: {
     type: double,
     default_value: 0.0,
-    description: "Weight for cost function to keep the elbow in the desired pose, >0.0 enables const function",
+    description: "Weight for cost function to keep a joint in the desired range, >0.0 enables const function",
+    validation: {
+      gt_eq<>: [0.0],
+    },
+  }
+  hard_joint_index: {
+    type: int,
+    default_value: 0,
+    description: "Index of the joint to apply the hard joint limits cost function",
+    validation: {
+      gt_eq<>: [0],
+    },
+  }
+  hard_joint_lower_limit: {
+    type: double,
+    default_value: 0.0,
+    description: "Lower limit for the hard joint limits cost function",
+  }
+  hard_joint_upper_limit: {
+    type: double,
+    default_value: 0.0,
+    description: "Upper limit for the hard joint limits cost function",
+  }
+  minimal_velocity_weight: {
+    type: double,
+    default_value: 0.0,
+    description: "Weight for minimal velocity cost function, >0.0 enables const function",
+    validation: {
+      gt_eq<>: [0.0],
+    },
+  }
+  minimal_velocity_joint_index: {
+    type: int,
+    default_value: 0,
+    description: "Index of the joint to apply the minimal velocity cost function",
+    validation: {
+      gt_eq<>: [0],
+    },
+  }
+  minimal_velocity_time_step: {
+    type: double,
+    default_value: 0.0,
+    description: "Time step for the minimal velocity cost function",
     validation: {
       gt_eq<>: [0.0],
     },

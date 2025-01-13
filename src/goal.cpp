@@ -99,9 +99,9 @@ auto make_center_joints_cost_fn(Robot robot) -> CostFn {
             }
 
             auto const position = active_positions[i];
-            auto const weight = variable.minimal_displacement_factor;
+
             auto const mid = (variable.min + variable.max) * 0.5;
-            sum += std::pow((position - mid) * weight, 2);
+            sum += std::pow(position - mid, 2);
         }
         return sum;
     };
@@ -118,10 +118,9 @@ auto make_avoid_joint_limits_cost_fn(Robot robot) -> CostFn {
             }
 
             auto const position = active_positions[i];
-            auto const weight = variable.minimal_displacement_factor;
+
             sum += std::pow(
-                std::fmax(0.0, std::fabs(position - variable.mid) * 2.0 - variable.half_span) *
-                    weight,
+                std::fmax(0.0, std::fabs(position - variable.mid) * 2.0 - variable.half_span),
                 2);
         }
         return sum;
@@ -136,39 +135,45 @@ auto make_minimal_displacement_cost_fn(Robot robot, std::vector<double> initial_
         for (size_t i = 0; i < active_positions.size(); ++i) {
             auto const guess = initial_guess[i];
             auto const position = active_positions[i];
-            auto const weight = robot.variables[i].minimal_displacement_factor;
-            sum += std::pow((position - guess) * weight, 2);
+
+            sum += std::pow(position - guess, 2);
         }
         return sum;
     };
 }
 
-auto make_configure_elbow_cost_fn(Robot robot) -> CostFn {
+auto make_minimal_velocity_cost_fn(Robot robot_,
+                                   std::vector<double> initial_guess,
+                                   long joint_index,
+                                   double time_step) -> CostFn {
     return [=](std::vector<double> const& active_positions) -> double {
         double sum = 0;
-        assert(active_positions.size() == robot.variables.size());
+        assert(active_positions.size() == robot_.variables.size() &&
+               active_positions.size() == initial_guess.size());
 
-        // joint 3 has limits [-180, 180]
-        // To get lower elbow configuration joint 3 should be > 0. To avoid configuration where the arm is straight
-        // we set an average configuration for joint 3 at 90 deg and define a custom goal (similar to avoid joint limits)
-        // that tries to keep joint 3 around 90 deg. 
+        auto const guess = initial_guess[joint_index];
+        auto const position = active_positions[joint_index];
 
-        double h = 3.14; // upper limit for joint 3
-        double l = 0; // lower limit for joint 3 to keep the arm in lower joint config
+        sum += std::pow(position - guess, 2) / time_step;
 
-        double configure_elbow_weight = 0.001; // user defined weight
-
-        long unsigned int i = 3; // elbow joint index
-        auto const elbow_position = active_positions[i];
-
-        sum += std::pow(
-                std::fmax(0.0, std::fabs(elbow_position - (h+l)/2) * 2.0 - (h-l)/2) * configure_elbow_weight,
-                2);
-        
         return sum;
     };
 }
 
+auto make_hard_joint_limits_cost_fn(Robot robot,
+                                    long joint_index,
+                                    double lower_limit,
+                                    double upper_limit) -> CostFn {
+    return [=](std::vector<double> const& active_positions) -> double {
+        assert(active_positions.size() == robot.variables.size());
+
+        double joint_value = active_positions[joint_index];
+        double value = std::fabs(joint_value - (upper_limit + lower_limit) / 2.0) * 2.0 -
+                       (upper_limit - lower_limit) / 2.0;
+        double cost = std::pow(std::fmax(0.0, value), 2);
+        return cost;
+    };
+}
 
 auto make_ik_cost_fn(geometry_msgs::msg::Pose pose,
                      kinematics::KinematicsBase::IKCostFn cost_fn,
@@ -202,7 +207,7 @@ auto make_is_solution_test_fn(std::vector<FrameTestFn> frame_tests,
 
         auto const cost_threshold_sq = std::pow(cost_threshold, 2);
         for (auto const& goal : goals) {
-            auto const cost = goal.eval(active_positions) * std::pow(goal.weight, 2);
+            auto const cost = goal.eval(active_positions) * goal.weight;
             if (cost >= cost_threshold_sq) {
                 return false;
             }
@@ -212,8 +217,9 @@ auto make_is_solution_test_fn(std::vector<FrameTestFn> frame_tests,
     };
 }
 
-auto make_cost_fn(std::vector<PoseCostFn> pose_cost_functions, std::vector<Goal> goals, FkFn fk)
-    -> CostFn {
+auto make_cost_fn(std::vector<PoseCostFn> pose_cost_functions,
+                  std::vector<Goal> goals,
+                  FkFn fk) -> CostFn {
     return [=](std::vector<double> const& active_positions) {
         auto tip_frames = fk(active_positions);
         auto const pose_cost =
@@ -223,7 +229,7 @@ auto make_cost_fn(std::vector<PoseCostFn> pose_cost_functions, std::vector<Goal>
                             [&](auto sum, auto const& fn) { return sum + fn(tip_frames); });
         auto const goal_cost =
             std::accumulate(goals.cbegin(), goals.cend(), 0.0, [&](auto sum, auto const& goal) {
-                return sum + goal.eval(active_positions) * std::pow(goal.weight, 2);
+                return sum + goal.eval(active_positions) * goal.weight;
             });
         return pose_cost + goal_cost;
     };

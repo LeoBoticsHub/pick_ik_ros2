@@ -143,6 +143,20 @@ class PickIKPlugin : public kinematics::KinematicsBase {
             goals.push_back(Goal{make_minimal_displacement_cost_fn(robot_, ik_seed_state),
                                  params.minimal_displacement_weight});
         }
+        if (params.minimal_velocity_weight > 0.0) {
+            goals.push_back(Goal{make_minimal_velocity_cost_fn(robot_,
+                                                               ik_seed_state,
+                                                               params.minimal_velocity_joint_index,
+                                                               params.minimal_velocity_time_step),
+                                 params.minimal_velocity_weight});
+        }
+        if (params.hard_joint_limits_weight > 0.0) {
+            goals.push_back(Goal{make_hard_joint_limits_cost_fn(robot_,
+                                                                params.hard_joint_index,
+                                                                params.hard_joint_lower_limit,
+                                                                params.hard_joint_upper_limit),
+                                 params.hard_joint_limits_weight});
+        }
         if (cost_function) {
             for (auto const& pose : ik_poses) {
                 goals.push_back(
@@ -150,9 +164,9 @@ class PickIKPlugin : public kinematics::KinematicsBase {
                          1.0});
             }
         }
-        
-        // Test of a custom goal, it works but it should be defined in an appropriate structure, following the other goals
-        // goals.push_back(Goal{make_configure_elbow_cost_fn(robot_),
+
+        // Test of a custom goal, it works but it should be defined in an appropriate structure,
+        // following the other goals goals.push_back(Goal{make_configure_elbow_cost_fn(robot_),
         //                          params.configure_elbow_weight});
 
         // test if this is a valid solution

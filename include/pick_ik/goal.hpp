@@ -45,7 +45,12 @@ auto make_avoid_joint_limits_cost_fn(Robot robot) -> CostFn;
 
 auto make_minimal_displacement_cost_fn(Robot robot, std::vector<double> initial_guess) -> CostFn;
 
-auto make_configure_elbow_cost_fn(Robot robot) -> CostFn;
+auto make_hard_joint_limits_cost_fn(Robot robot, long joint_index, double lower_limit, double upper_limit) -> CostFn;
+
+auto make_minimal_velocity_cost_fn(Robot robot_,
+                                   std::vector<double> initial_guess,
+                                   long joint_index,
+                                   double time_step) -> CostFn;
 
 auto make_ik_cost_fn(geometry_msgs::msg::Pose pose,
                      kinematics::KinematicsBase::IKCostFn cost_fn,
